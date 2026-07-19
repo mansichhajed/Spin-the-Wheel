@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedAegis Legal — Spin & Learn</title>
+<style>
+  :root{
+    --navy:#0B2545;
+    --navy-dark:#081b34;
+    --gold:#C9A227;
+    --gold-light:#E4C65A;
+    --teal:#0F6E56;
+    --cream:#F7F4EC;
+    --white:#ffffff;
+    --text:#0B2545;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:transparent;
+  }
+  .mal-wrap{
+    max-width:520px;
+    margin:0 auto;
+    padding:28px 20px 34px;
+    background:var(--cream);
+    border-radius:18px;
+    text-align:center;
+    box-shadow:0 6px 24px rgba(11,37,69,0.12);
+  }
+  .mal-header{
+    margin-bottom:6px;
+  }
+  .mal-header img{
+    max-height:38px;
+    margin-bottom:8px;
+  }
+  .mal-title{
+    font-size:22px;
+    font-weight:700;
+    color:var(--navy);
+    margin:4px 0 2px;
+  }
+  .mal-sub{
+    font-size:14px;
+    color:#4b5b73;
+    margin:0 0 20px;
+  }
+  .mal-wheel-area{
+    position:relative;
+    width:320px;
+    height:320px;
+    margin:0 auto 22px;
+  }
+  .mal-pointer{
+    position:absolute;
+    top:-4px;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;
+    height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-top:22px solid var(--gold);
+    z-index:5;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,0.25));
+  }
+  #malCanvas{
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    box-shadow:0 0 0 6px var(--navy), 0 0 0 9px var(--gold);
+    transition:transform 4.5s cubic-bezier(0.17,0.67,0.16,0.99);
+  }
+  .mal-hub{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:56px;height:56px;
+    background:var(--navy);
+    border:3px solid var(--gold);
+    border-radius:50%;
+    z-index:4;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .mal-hub span{
+    color:var(--gold-light);
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:0.5px;
+  }
+  #malSpinBtn{
+    background:var(--navy);
+    color:var(--gold-light);
+    border:none;
+    padding:13px 38px;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    border-radius:30px;
+    cursor:pointer;
+    transition:background 0.2s, transform 0.15s;
+  }
+  #malSpinBtn:hover{background:var(--navy-dark);}
+  #malSpinBtn:active{transform:scale(0.97);}
+  #malSpinBtn:disabled{opacity:0.55;cursor:not-allowed;}
+
+  .mal-result{
+    margin-top:20px;
+    background:var(--white);
+    border-radius:14px;
+    padding:18px 20px;
+    text-align:left;
+    display:none;
+    border-left:5px solid var(--gold);
+    box-shadow:0 3px 10px rgba(11,37,69,0.08);
+  }
+  .mal-result.show{display:block;animation:malFadeIn 0.4s ease;}
+  @keyframes malFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .mal-result-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--white);
+    background:var(--teal);
+    padding:3px 10px;
+    border-radius:20px;
+    margin-bottom:10px;
+  }
+  .mal-result-text{
+    font-size:15px;
+    line-height:1.55;
+    color:var(--text);
+    margin:0 0 14px;
+  }
+  .mal-cta{
+    display:inline-block;
+    text-decoration:none;
+    background:var(--gold);
+    color:var(--navy);
+    font-weight:700;
+    font-size:13.5px;
+    padding:9px 20px;
+    border-radius:24px;
+  }
+  .mal-cta:hover{background:var(--gold-light);}
+  .mal-footer-note{
+    margin-top:16px;
+    font-size:11.5px;
+    color:#7d8ba0;
+  }
+</style>
+</head>
+<body>
+
+<div class="mal-wrap">
+  <div class="mal-header">
+    <div class="mal-title">Spin to learn something new</div>
+    <p class="mal-sub">Medico-legal facts, myths & tips from MedAegis Legal</p>
+  </div>
+
+  <div class="mal-wheel-area">
+    <div class="mal-pointer"></div>
+    <canvas id="malCanvas" width="320" height="320"></canvas>
+    <div class="mal-hub"><span>SPIN</span></div>
+  </div>
+
+  <button id="malSpinBtn">Spin the wheel</button>
+
+  <div class="mal-result" id="malResult">
+    <span class="mal-result-tag" id="malTag"></span>
+    <p class="mal-result-text" id="malText"></p>
+    <a href="#" class="mal-cta" id="malCta" target="_blank" rel="noopener">Visit MedAegis Legal</a>
+  </div>
+
+  <p class="mal-footer-note">Spin again anytime — new content each round.</p>
+</div>
+
+<script>
+(function(){
+
+  var WEBSITE_URL = "https://medaegislegal.com/";
+
+  var segments = [
+    { key:"didyouknow", label:"Did You Know", color:"#0B2545", textColor:"#F7F4EC" },
+    { key:"mythfact",   label:"Myth vs Fact", color:"#C9A227", textColor:"#0B2545" },
+    { key:"tip",        label:"Quick Tip",    color:"#0F6E56", textColor:"#F7F4EC" },
+    { key:"visit",      label:"Explore Us",   color:"#0B2545", textColor:"#F7F4EC" },
+    { key:"quiz",       label:"Legal Byte",   color:"#C9A227", textColor:"#0B2545" }
+  ];
+
+  var content = {
+    didyouknow: [
+      "In India, every hospital is legally required to maintain medical records for a minimum period — usually 3 years for adults and longer for medico-legal or minor patient cases.",
+      "A signed consent form isn't a blanket shield — consent must be 'informed,' meaning the patient understood the risks, alternatives, and consequences before agreeing.",
+      "Even a verbal complaint from a patient can trigger a formal inquiry under consumer protection law if it's later put in writing.",
+      "Doctors can be held liable under both criminal and civil law for the same medical incident — they aren't mutually exclusive.",
+      "Poor documentation, not poor treatment, is one of the most common reasons doctors lose medico-legal cases."
+    ],
+    mythfact: [
+      "Myth: 'If I didn't make a mistake, I can't be sued.' Fact: Cases can still be filed and contested — proper documentation is what protects you, not the absence of error.",
+      "Myth: 'Medico-legal issues only affect doctors.' Fact: Hospitals, clinics, diagnostic centers, and even healthcare startups carry compliance and liability risk.",
+      "Myth: 'Insurance alone covers all legal risk.' Fact: Insurance may cover damages, but it rarely covers reputational harm, license issues, or procedural compliance gaps.",
+      "Myth: 'Verbal consent is enough for any procedure.' Fact: Many procedures legally require documented, informed, written consent.",
+      "Myth: 'Medico-legal support is only needed after a problem arises.' Fact: Preventive audits and compliance reviews are designed to stop issues before they start."
+    ],
+    tip: [
+      "Standardize your consent forms across all procedures — inconsistent documentation is a common trigger for disputes.",
+      "Conduct a periodic medico-legal audit of your clinic or hospital, even if nothing seems wrong. Prevention is cheaper than litigation.",
+      "Train your front-desk and nursing staff on basic documentation practices — most disputes start with recordkeeping gaps, not clinical errors.",
+      "Keep your SOPs (Standard Operating Procedures) updated as regulations evolve — outdated policies are a silent legal risk.",
+      "If you receive a legal notice, do not respond directly — consult a medico-legal expert before drafting any reply."
+    ],
+    visit: [
+      "Curious what medico-legal advisory actually looks like in practice? See how MedAegis supports doctors and hospitals end-to-end.",
+      "From compliance audits to litigation support, MedAegis covers the full spectrum of medico-legal protection — take a look.",
+      "Explore how MedAegis helps healthcare startups build legally sound foundations from day one."
+    ],
+    quiz: [
+      "A 'medico-legal case' (MLC) is any case where treatment involves elements needing legal investigation — such as accidents, assaults, poisoning, or suspicious injuries.",
+      "The doctrine of 'res ipsa loquitur' ('the thing speaks for itself') can sometimes shift the burden of proof onto the treating doctor in negligence cases.",
+      "A POSH (Prevention of Sexual Harassment) policy isn't optional — it's mandatory for any healthcare organization with 10 or more employees.",
+      "Risk management in healthcare isn't just clinical — it also covers data protection, staff conduct, and vendor contracts."
+    ]
+  };
+
+  var usedIndex = {};
+  Object.keys(content).forEach(function(k){ usedIndex[k] = []; });
+
+  function pickContent(key){
+    var arr = content[key];
+    if(usedIndex[key].length >= arr.length){ usedIndex[key] = []; }
+    var idx;
+    do { idx = Math.floor(Math.random()*arr.length); }
+    while(usedIndex[key].indexOf(idx) !== -1 && usedIndex[key].length < arr.length);
+    usedIndex[key].push(idx);
+    return arr[idx];
+  }
+
+  var canvas = document.getElementById('malCanvas');
+  var ctx = canvas.getContext('2d');
+  var cx = 160, cy = 160, r = 158;
+  var segAngle = (2*Math.PI)/segments.length;
+
+  function drawWheel(){
+    ctx.clearRect(0,0,320,320);
+    for(var i=0;i<segments.length;i++){
+      var start = i*segAngle - Math.PI/2;
+      var end = start + segAngle;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,start,end);
+      ctx.closePath();
+      ctx.fillStyle = segments[i].color;
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(start + segAngle/2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = segments[i].textColor;
+      ctx.font = "bold 13px Segoe UI, Arial, sans-serif";
+      ctx.fillText(segments[i].label, r-18, 5);
+      ctx.restore();
+    }
+  }
+  drawWheel();
+
+  var spinning = false;
+  var currentRotation = 0;
+  var btn = document.getElementById('malSpinBtn');
+  var resultBox = document.getElementById('malResult');
+  var tagEl = document.getElementById('malTag');
+  var textEl = document.getElementById('malText');
+  var ctaEl = document.getElementById('malCta');
+
+  btn.addEventListener('click', function(){
+    if(spinning) return;
+    spinning = true;
+    btn.disabled = true;
+    resultBox.classList.remove('show');
+
+    var winnerIndex = Math.floor(Math.random()*segments.length);
+    var segCenterDeg = winnerIndex*(360/segments.length) + (360/segments.length)/2;
+    var fullSpins = 6*360;
+    var targetDeg = fullSpins + (360 - segCenterDeg);
+    currentRotation += targetDeg;
+
+    canvas.style.transform = "rotate(" + currentRotation + "deg)";
+
+    setTimeout(function(){
+      spinning = false;
+      btn.disabled = false;
+      showResult(segments[winnerIndex]);
+    }, 4600);
+  });
+
+  function showResult(seg){
+    tagEl.textContent = seg.label;
+    if(seg.key === "visit"){
+      textEl.textContent = pickContent("visit");
+      ctaEl.style.display = "inline-block";
+      ctaEl.href = WEBSITE_URL;
+      ctaEl.textContent = "Visit MedAegis Legal";
+    } else {
+      textEl.textContent = pickContent(seg.key);
+      ctaEl.style.display = "inline-block";
+      ctaEl.href = WEBSITE_URL;
+      ctaEl.textContent = "Learn more on our website";
+    }
+    resultBox.classList.add('show');
+  }
+
+})();
+</script>
+
+</body>
+</html>
